@@ -1,6 +1,8 @@
 ﻿using BugStore.Application.Abstractions.Repositories;
 using BugStore.Application.Common;
+using BugStore.Application.Requests.Orders;
 using BugStore.Domain.Entities;
+using BugStore.Infrastructure.Extensions;
 
 namespace BugStore.Infrastructure.Tests.Repositories;
 
@@ -36,6 +38,30 @@ public class OrderFakeRepository(List<Order> db) : IOrderRepository
         catch (Exception ex)
         {
             return Result<Order>.Fail($"GENERIC: Unexpected error while retrieving order: {ex.Message}");
+        }
+    }
+
+    public async Task<PagedResult<Order>> GetPagedAsync(GetOrdersRequest request, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var query = db
+                .AsQueryable()
+                .FilterBy(request)
+                .OrderByDescending(o => o.CreatedAt);
+
+            var totalCount = query.Count();
+
+            var items = query
+                .Skip((request.PageNumber - 1) * request.PageSize)
+                .Take(request.PageSize)
+                .ToList();
+
+            return PagedResult<Order>.Ok(items, totalCount, request.PageNumber, request.PageSize);
+        }
+        catch (Exception ex)
+        {
+            return PagedResult<Order>.Fail($"GENERIC: Unexpected error while paging orders: {ex.Message}");
         }
     }
 

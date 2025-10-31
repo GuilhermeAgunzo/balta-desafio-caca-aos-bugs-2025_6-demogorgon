@@ -1,6 +1,8 @@
 ﻿using BugStore.Application.Abstractions.Repositories;
 using BugStore.Application.Common;
+using BugStore.Application.Requests.Customers;
 using BugStore.Domain.Entities;
+using BugStore.Infrastructure.Extensions;
 
 namespace BugStore.Infrastructure.Tests.Repositories;
 
@@ -80,24 +82,28 @@ public class FakeCustomerRepository(List<Customer> db) : ICustomerRepository
         }
     }
 
-    public async Task<PagedResult<Customer>> GetPagedAsync(int pageNumber, int pageSize, CancellationToken cancellationToken = default)
+    public async Task<PagedResult<Customer>> GetPagedAsync(GetCustomersRequest request, CancellationToken cancellationToken = default)
     {
         try
         {
-            var count = db.Count;
+            var query = db
+                .AsQueryable()
+                .FilterBy(request)
+                .OrderBy(p => p.Name);
 
-            var customers = db
-                .OrderBy(p => p.Name)
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
+            var count = query.Count();
+
+            var customers = query
+                .Skip((request.PageNumber - 1) * request.PageSize)
+                .Take(request.PageSize)
                 .ToList();
 
 
             return PagedResult<Customer>.Ok(
                 items: customers,
                 totalCount: count,
-                currentPage: pageNumber,
-                pageSize: pageSize);
+                currentPage: request.PageNumber,
+                pageSize: request.PageSize);
         }
         catch
         {

@@ -10,7 +10,7 @@ public class GetCustomersHandler(ICustomerRepository customerRepository) : IGetC
 {
     public async Task<PagedResponse<IEnumerable<Customer>>> HandleAsync(GetCustomersRequest req, CancellationToken cancellationToken = default)
     {
-        var result = await customerRepository.GetPagedAsync(req.PageNumber, req.PageSize, cancellationToken);
+        var result = await customerRepository.GetPagedAsync(req, cancellationToken);
 
         return result.Success
             ? new PagedResponse<IEnumerable<Customer>>(data: result.Items, totalCount: result.TotalCount, currentPage: req.PageNumber, pageSize: req.PageSize)
